@@ -1,14 +1,26 @@
+import configparser
 import spotipy
 import spotipy.util as util
 import pandas as pd
 import json
 
-file = 'data/billboard_lyrics_2000-2015.csv'
+credentials_file = 'credentials/client_credentials.ini'
+billboard_file = 'data/billboard_lyrics_2000-2015.csv'
+output_file = 'data/output.csv'
+
+client_configs = configparser.ConfigParser()
+client_configs.read(credentials_file)
+username = client_configs['DEFAULT']['username']
+scope = client_configs['DEFAULT']['scope']
+client_id = client_configs['DEFAULT']['client_id']
+client_secret = client_configs['DEFAULT']['client_secret']
+redirect_uri = client_configs['DEFAULT']['redirect_uri']
+
 token = util.prompt_for_user_token(username, scope, client_id, client_secret, redirect_uri)
-
-df = pd.read_csv(file)
+ 
+df = pd.read_csv(billboard_file)
 lo = 0
-
+ 
 while lo < 1562:
     quickview = df.iloc[lo:lo+50, 0:5]
     ids = []
@@ -24,7 +36,7 @@ while lo < 1562:
     duration_ms = []
     loudness = []
     valence = [] 
-    
+     
     if token:
         sp = spotipy.Spotify(auth=token)
         for index, row in quickview.iterrows():
@@ -38,7 +50,7 @@ while lo < 1562:
                 ids.append(t['id'])
     else:
         print "Can't get token for", username
-    
+     
     features = sp.audio_features(ids)
     for i in range(len(features)):
         json_string = json.dumps(features[i], indent=4)
@@ -69,7 +81,7 @@ while lo < 1562:
             duration_ms.append('NA')
             loudness.append('NA')
             valence.append('NA')  
-    
+     
     quickview['ids'] = ids
     quickview['energy'] = energy
     quickview['liveness'] = liveness
@@ -83,10 +95,10 @@ while lo < 1562:
     quickview['duration_ms'] = duration_ms
     quickview['loudness'] = loudness
     quickview['valence'] = valence
-    
+     
     if lo == 0: 
-        quickview.to_csv('data/output.csv')
+        quickview.to_csv(output_file)
     else: 
-        quickview.to_csv('data/output.csv',mode='a')
-    
+        quickview.to_csv(output_file,mode='a')
+     
     lo = lo + 50
